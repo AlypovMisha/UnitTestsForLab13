@@ -1,0 +1,206 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections;
+using System.IO;
+using Лабораторная_13;
+
+namespace UnitTestProject4
+{
+    [TestClass]
+    public class MyObservableCollectionTests
+    {
+        private MyObservableCollection<Cars> collection;
+        private Journal journal;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            collection = new MyObservableCollection<Cars>("Test Collection");
+            journal = new Journal();
+        }
+
+        [TestMethod]
+        public void Test_Add_InvokesCollectionCountChangedEvent()
+        {
+            // Arrange
+            bool eventInvoked = false;
+            collection.CollectionCountChanged += (source, args) => eventInvoked = true;
+            var car = new Cars { Brand = "Toyota", Id = 1 };
+
+            // Act
+            collection.Add(car);
+
+            // Assert
+            Assert.IsTrue(eventInvoked);
+            Assert.IsTrue(collection.Contains(car));
+        }
+
+        [TestMethod]
+        public void Test_Remove_InvokesCollectionCountChangedEvent()
+        {
+            // Arrange
+            var car = new Cars { Brand = "Toyota", Id = 1 };
+            collection.Add(car);
+            bool eventInvoked = false;
+            collection.CollectionCountChanged += (source, args) => eventInvoked = true;
+
+            // Act
+            collection.Remove(car);
+
+            // Assert
+            Assert.IsTrue(eventInvoked);
+            Assert.IsFalse(collection.Contains(car));
+        }
+
+        [TestMethod]
+        public void Test_IndexerSet_InvokesCollectionReferenceChangedEvent()
+        {
+            // Arrange
+            var car = new Cars { Brand = "Toyota", Id = 1 };
+            collection.Add(car);
+            bool eventInvoked = false;
+            collection.CollectionReferenceChanged += (source, args) => eventInvoked = true;
+
+            // Act
+            collection[0] = new Cars { Brand = "Honda", Id = 2 };
+
+            // Assert
+            Assert.IsTrue(eventInvoked);
+        }
+
+        [TestMethod]
+        public void Test_Add_AddsItemToCollection()
+        {
+            // Arrange
+            var car = new Cars { Brand = "Toyota", Id = 1 };
+
+            // Act
+            collection.Add(car);
+
+            // Assert
+            Assert.IsTrue(collection.Contains(car));
+            Assert.AreEqual(1, collection.Count);
+        }
+
+        [TestMethod]
+        public void Test_Remove_RemovesItemFromCollection()
+        {
+            // Arrange
+            var car = new Cars { Brand = "Toyota", Id = 1 };
+            collection.Add(car);
+
+            // Act
+            bool removed = collection.Remove(car);
+
+            // Assert
+            Assert.IsTrue(removed);
+            Assert.IsFalse(collection.Contains(car));
+            Assert.AreEqual(0, collection.Count);
+        }
+    }
+
+    [TestClass]
+    public class CollectionHandlerEventArgsTests
+    {
+        [TestMethod]
+        public void Test_Constructor_SetsPropertiesCorrectly()
+        {
+            // Arrange
+            string collectionName = "Test Collection";
+            string changeType = "Add";
+            string changedItem = "Toyota";
+
+            // Act
+            var args = new CollectionHandlerEventArgs(collectionName, changeType, changedItem);
+
+            // Assert
+            Assert.AreEqual(collectionName, args.CollectionName);
+            Assert.AreEqual(changeType, args.ChangeType);
+            Assert.AreEqual(changedItem, args.ChangedItem);
+        }
+    }
+
+    [TestClass]
+    public class JournalTests
+    {
+        private Journal journal;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            journal = new Journal();
+        }
+
+        [TestMethod]
+        public void Test_AddEntry_AddsEntryToJournal()
+        {
+            // Arrange
+            var entry = new JournalEntry("Test Collection", "Add", "Toyota");
+
+            // Act
+            journal.AddEntry(entry);
+
+            // Assert
+            Assert.AreEqual(1, journal);
+            Assert.AreEqual(entry, journal);
+        }
+
+        [TestMethod]
+        public void Test_PrintJournal_PrintsAllEntries()
+        {
+            // Arrange
+            var entry1 = new JournalEntry("Test Collection", "Add", "Toyota");
+            var entry2 = new JournalEntry("Test Collection", "Remove", "Honda");
+            journal.AddEntry(entry1, args);
+            journal.AddEntry(entry2);
+
+            // Act & Assert
+            using (var sw = new StringWriter())
+            {
+                Console.SetOut(sw);
+                journal.PrintJournal();
+                string result = sw.ToString();
+
+                Assert.IsTrue(result.Contains(entry1.ToString()));
+                Assert.IsTrue(result.Contains(entry2.ToString()));
+            }
+        }
+    }
+
+    [TestClass]
+    public class JournalEntryTests
+    {
+        [TestMethod]
+        public void Test_JournalEntry_Constructor_SetsPropertiesCorrectly()
+        {
+            // Arrange
+            string collectionName = "Test Collection";
+            string changeType = "Add";
+            string changedItem = "Toyota";
+
+            // Act
+            var entry = new JournalEntry(collectionName, changeType, changedItem);
+
+            // Assert
+            Assert.AreEqual(collectionName, entry.CollectionName);
+            Assert.AreEqual(changeType, entry.ChangeType);
+            Assert.AreEqual(changedItem, entry.ChangedItem);
+        }
+
+        [TestMethod]
+        public void Test_JournalEntry_ToString_ReturnsCorrectString()
+        {
+            // Arrange
+            string collectionName = "Test Collection";
+            string changeType = "Add";
+            string changedItem = "Toyota";
+
+            // Act
+            var entry = new JournalEntry(collectionName, changeType, changedItem);
+            string expected = $"{collectionName} - тип изменения: {changeType}, измененный элемент: {changedItem}";
+
+            // Assert
+            Assert.AreEqual(expected, entry.ToString());
+        }
+    }
+}
